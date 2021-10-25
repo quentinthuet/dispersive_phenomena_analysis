@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 #  Discrétisation en espace
 
 
-xmin = 0.0; xmax = 2; nptx = 61; nx = nptx-2  
+xmin = 0.0; xmax = 2.0; nptx = 61; nx = nptx-2  
 hx = (xmax-xmin)/(nptx -1)
 xx = np.linspace(xmin,xmax,nptx) 
 xx = xx.transpose()
@@ -34,7 +34,7 @@ vx = 1 # Vitesse along x
 cfl =0.5 # cfl =mu*dt/hx^2+mu*dt/hy^2 ou v*dt/h
 dt = (hx**2)*(hy**2)*cfl/(mu*(hx**2 + hy**2)) # dt = pas de temps
 #dt = cfl*hx/vx
-Tfinal = 5   # Temps final souhaitÃ©
+Tfinal = 1.5   # Temps final souhaitÃ©
 
 
 
@@ -94,13 +94,13 @@ F = np.zeros((nx+2)*(ny+2))
 # =============================================================================
 s0 = 0.1
 x0 = 0.25
-y0=0.5
+y0 = 0.5
 
 def Sol_init(x):
     return np.exp( -((x[0]-x0)/s0)**2 -((x[1]-y0)/s0)**2   )
 
 def Sol_init_2(x):
-    return (s0**2-(x[0]-x0)**2-(x[1]-y0))*(s0**2-(x[0]-x0)**2-(x[1]-y0) > 0)
+    return (s0**2-(x[0]-x0)**2-(x[1]-y0)**2)*(s0**2-(x[0]-x0)**2-(x[1]-y0)**2 > 0)
 
 
 
@@ -126,6 +126,9 @@ u = u_init.copy()
 nt = int(Tfinal/dt)
 Tfinal = nt*dt # on corrige le temps final (si Tfinal/dt n'est pas entier)
 
+concentration_ini = max(u)
+concentration = []
+
 # Time loop
 for n in range(1,nt+1):
     
@@ -134,7 +137,10 @@ for n in range(1,nt+1):
     
     
     u = np.linalg.solve((np.eye(A2D.shape[0])-dt/2*A2D),(np.eye(A2D.shape[0])+dt/2*A2D).dot(u)) 
-  
+    
+    concentration += [max(u)/concentration_ini]
+    
+    
  # Print solution
     if n%5 == 0:
       plt.figure(1)
@@ -146,6 +152,7 @@ for n in range(1,nt+1):
       ax.view_init(60, 35)
       plt.title(['Schema explicite avec CFL=%s' %(cfl), '$t=$%s' %(n*dt)])
       ax.set_zlim(-4,1)
+      plt.show()
 
 ####################################################################
 # comparaison solution exacte avec solution numerique au temps final
@@ -153,11 +160,19 @@ j0 = int((npty-1)/2)
 i0 = int((nptx-1)/2)
 
 
+
 plt.figure(2)
 plt.clf()
 x = np.linspace(xmin,xmax,nptx)
 y = np.linspace(ymin,ymax,npty)
-plt.plot(y,uu_init[-1,:],y,uu[-1,:],'k') #,x,uexacte,'or')
+plt.plot(x,uu_init[:,j0],x,uu[:,j0],'k') #,x,uexacte,'or')
+#plt.plot(y,uu_init[-1,:],y,uu[-1,:],'k') #,x,uexacte,'or')
 plt.legend(['Solution initiale','Schema explicite =%s' %(cfl)]) #,'solution exacte'],loc='best')
 plt.show()
 
+plt.figure(3)
+plt.clf()
+plt.hlines(0.2,0,Tfinal,'r')
+plt.plot(np.linspace(0,Tfinal,len(concentration)),concentration)
+plt.title('Ratio de la concentration maximale a chaque pas de temps et de la concentration maximale au temps initial')
+plt.show()
